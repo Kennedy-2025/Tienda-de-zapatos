@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zapatería Moderna</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <h1>Zapatería Moderna</h1>
+    <div id="cart" onclick="openCart()">🛒 Carrito: <span id="cart-count">0</span></div>
+  </header>
+
+  <main>
+    <section id="product-list" class="product-list"></section>
+
+    <button id="admin-btn">🔐 Modo administrador</button>
+
+    <section id="admin-section" class="hidden admin-panel">
+      <h2>Administrador</h2>
+      <form id="add-form">
+        <input type="text" id="name" placeholder="Nombre del zapato" required>
+        <input type="number" id="price" placeholder="Precio" step="0.01" required>
+        <input type="url" id="image" placeholder="URL de imagen" required>
+        <input type="text" id="sizes" placeholder="Tallas (ej: 38,39,40)" required>
+        <button type="submit">Agregar</button>
+      </form>
+    </section>
+  </main>
+
+  <!-- MODAL TALLAS -->
+  <div id="size-modal" class="modal hidden">
+    <div class="modal-content animate">
+      <span id="close-modal" class="close">&times;</span>
+      <h2 id="modal-product-name"></h2>
+      <div id="size-options" class="sizes"></div>
+      <button id="buy-btn">Agregar al carrito / Comprar por WhatsApp</button>
+    </div>
+  </div>
+
+  <!-- MODAL CARRITO -->
+  <div id="cart-modal" class="modal hidden">
+    <div class="modal-content animate">
+      <span id="close-cart" class="close">&times;</span>
+      <h2>Tu carrito</h2>
+      <div id="cart-items"></div>
+      <h3>Total: $<span id="cart-total">0.00</span></h3>
+      <button onclick="checkout()">Comprar por WhatsApp</button>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
+<footer>
+  Creado por Kennedy Casco
+</footer>
