@@ -1,18 +1,17 @@
-const adminPhone = "50583647398";
+const adminPhone = "505834867398"; 
 const adminPassword = "celenia2019";
+
 let selectedProduct = null;
 let selectedSize = null;
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
-let products = JSON.parse(localStorage.getItem("products")) || [
-  { name: "Zapato Deportivo", price: 49.99, image: "https://images.unsplash.com/photo-1596464716121-2a0c1aa02e04?auto=format&fit=crop&w=400&q=80", sizes: [38,39,40,41,42], available: true },
-  { name: "Zapato Elegante", price: 89.99, image: "https://images.unsplash.com/photo-1606811847181-cbde7b78c74c?auto=format&fit=crop&w=400&q=80", sizes: [39,40,41,42,44], available: true }
-];
+let products = JSON.parse(localStorage.getItem("products")) || [];
 
 let isAdmin = false;
 
 function saveProducts() { localStorage.setItem("products", JSON.stringify(products)); }
 function saveCart() { localStorage.setItem("cart", JSON.stringify(cart)); }
 
+// Renderizar productos
 function renderProducts() {
   const list = document.getElementById("product-list");
   list.innerHTML = "";
@@ -36,6 +35,7 @@ function renderProducts() {
 renderProducts();
 updateCartCount();
 
+// Administrador: eliminar producto
 function deleteProduct(index) {
   if(!isAdmin) return toast("Acción no permitida");
   if(confirm(`¿Eliminar "${products[index].name}"?`)) {
@@ -46,6 +46,7 @@ function deleteProduct(index) {
   }
 }
 
+// Alternar disponibilidad
 function toggleAvailability(index) {
   if(!isAdmin) return toast("Acción no permitida");
   products[index].available = !products[index].available;
@@ -54,6 +55,7 @@ function toggleAvailability(index) {
   toast(products[index].available ? "Producto disponible" : "Producto agotado");
 }
 
+// Modal tallas
 function openSizes(index) {
   selectedProduct = products[index];
   if(!selectedProduct.available) return toast("Producto agotado");
@@ -89,6 +91,7 @@ function selectSize(size, btn) {
   toast(`Talla ${size} seleccionada`);
 }
 
+// Comprar/agregar al carrito
 document.getElementById("buy-btn").onclick = () => {
   if(!selectedSize) return toast("Selecciona una talla primero");
   cart.push({ name: selectedProduct.name, price: selectedProduct.price, size: selectedSize });
@@ -102,6 +105,7 @@ function updateCartCount() {
   document.getElementById("cart-count").textContent = cart.length;
 }
 
+// Modal carrito
 function openCart() {
   const cartModal = document.getElementById("cart-modal");
   const items = document.getElementById("cart-items");
@@ -119,11 +123,10 @@ function openCart() {
 
     const btn = document.createElement("button");
     btn.textContent = "Eliminar";
-
     btn.addEventListener("click", () => {
       cart.splice(index, 1);
       saveCart();
-      div.remove(); // Eliminamos solo este item
+      div.remove();
       updateCartCount();
       let newTotal = cart.reduce((sum, i) => sum + i.price, 0);
       document.getElementById("cart-total").textContent = `C$${newTotal.toFixed(2)}`;
@@ -138,6 +141,7 @@ function openCart() {
   cartModal.classList.remove("hidden");
 }
 
+// Checkout WhatsApp
 function checkout() {
   if(cart.length === 0) return toast("El carrito está vacío");
 
@@ -152,6 +156,7 @@ function checkout() {
   window.open(url, "_blank");
 }
 
+// Modales
 document.getElementById("close-modal").onclick = () => document.getElementById("size-modal").classList.add("hidden");
 document.getElementById("close-cart").onclick = () => document.getElementById("cart-modal").classList.add("hidden");
 document.addEventListener("keydown", e => {
@@ -161,6 +166,7 @@ document.addEventListener("keydown", e => {
   }
 });
 
+// Toast
 function toast(msg) {
   const t = document.getElementById("toast");
   t.textContent = msg;
@@ -170,6 +176,7 @@ function toast(msg) {
   t.onclick = () => { t.classList.remove("show"); t.classList.add("hidden"); };
 }
 
+// Modo administrador
 document.getElementById("admin-btn").onclick = () => {
   const password = prompt("Introduce la contraseña de administrador:");
   if(password === adminPassword) {
@@ -182,21 +189,44 @@ document.getElementById("admin-btn").onclick = () => {
   }
 };
 
-document.getElementById("add-form").onsubmit = e => {
+// Agregar producto (subida al backend)
+document.getElementById("add-form").onsubmit = async (e) => {
   e.preventDefault();
   if(!isAdmin) return toast("Acción no permitida");
 
   const name = document.getElementById("name").value.trim();
   const price = parseFloat(document.getElementById("price").value);
-  const image = document.getElementById("image").value.trim();
-  const sizes = document.getElementById("sizes").value.split(",").map(s => Number(s.trim())).filter(n => !isNaN(n));
+  const sizes = document.getElementById("sizes").value.split(",").map(s => Number(s.trim()));
 
-  if(!name || !image || sizes.length === 0 || isNaN(price)) return toast("Datos inválidos");
+  const archivo = document.getElementById("image").files[0];
 
-  products.push({name, price, image, sizes, available:true});
+  if (!archivo || !name || sizes.length === 0 || isNaN(price)) {
+    return toast("Datos inválidos");
+  }
+
+  // Subir imagen al backend
+  const formData = new FormData();
+  formData.append("imagen", archivo);
+
+  const resp = await fetch("/upload", {
+    method: "POST",
+    body: formData
+  });
+
+  const data = await resp.json();
+  if (!data.url) return toast("Error al subir imagen");
+
+  // Guardar producto
+  products.push({
+    name,
+    price,
+    image: data.url,
+    sizes,
+    available: true
+  });
+
   saveProducts();
   renderProducts();
-  e.target.reset();
   toast("Producto agregado!");
+  e.target.reset();
 };
-
