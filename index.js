@@ -1,4 +1,4 @@
-const adminPhone = "505834867398"; 
+const adminPhone = "50583647398"; 
 const adminPassword = "celenia2019";
 
 let selectedProduct = null;
@@ -230,3 +230,4 @@ document.getElementById("add-form").onsubmit = async (e) => {
   toast("Producto agregado!");
   e.target.reset();
 };
+
