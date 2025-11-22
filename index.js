@@ -1,5 +1,5 @@
 const adminPhone = "50583647398";
-const adminPassword = "1234";
+const adminPassword = "celenia2019";
 let selectedProduct = null;
 let selectedSize = null;
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
@@ -199,3 +199,4 @@ document.getElementById("add-form").onsubmit = e => {
   e.target.reset();
   toast("Producto agregado!");
 };
+
