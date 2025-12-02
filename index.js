@@ -1,6 +1,6 @@
 // =============== CONFIGURACIÓN ===============
-const adminPhone = "5053993383";
-const adminPassword = "1234";
+const adminPhone = "50583647398";
+const adminPassword = "celenia2019";
 
 let selectedProduct = null;
 let selectedSize = null;
@@ -225,3 +225,4 @@ function toast(msg) {
   t.classList.add("show");
   setTimeout(() => { t.classList.remove("show"); t.classList.add("hidden"); }, 2500);
 }
+
