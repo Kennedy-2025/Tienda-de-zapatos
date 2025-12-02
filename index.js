@@ -1,19 +1,39 @@
-// ===== CONFIG =====
-const adminPhone = "50583647398";
-const adminPassword = "celenia2019";
+// ===== FIREBASE CONFIG =====
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-storage.js";
 
+const firebaseConfig = {
+  apiKey: "AIzaSyBjbzxSrLjp3qgl8qaYDfQQgVX5E7DqxUs",
+  authDomain: "zapateria-3d5da.firebaseapp.com",
+  databaseURL: "https://zapateria-3d5da-default-rtdb.firebaseio.com",
+  projectId: "zapateria-3d5da",
+  storageBucket: "zapateria-3d5da.firebasestorage.app",
+  messagingSenderId: "885381797478",
+  appId: "1:885381797478:web:860afaaf0584275bd43fa7",
+  measurementId: "G-4MP0B60M4W"
+};
+
+const app = initializeApp(firebaseConfig);
+const storage = getStorage(app);
+
+// ===== VARIABLES =====
+const adminPassword = "celenia2019";
+let isAdmin = false;
 let selectedProduct = null;
 let selectedSize = null;
-let isAdmin = false;
-
-let cart = JSON.parse(localStorage.getItem("cart")) || [];
 let products = JSON.parse(localStorage.getItem("products")) || [];
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
+// ===== UTILIDADES =====
 function saveProducts() { localStorage.setItem("products", JSON.stringify(products)); }
 function saveCart() { localStorage.setItem("cart", JSON.stringify(cart)); }
 
-renderProducts();
-updateCartCount();
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2500);
+}
 
 // ===== MODO ADMIN =====
 document.getElementById("admin-btn").onclick = () => {
@@ -35,20 +55,20 @@ document.getElementById("add-form").onsubmit = async (e) => {
   const price = parseFloat(document.getElementById("price").value);
   const sizes = document.getElementById("sizes").value.split(",").map(s => Number(s.trim()));
   const imageFile = document.getElementById("image").files[0];
-
+  
   if(!name || !imageFile || sizes.length === 0 || isNaN(price)) return toast("Datos inválidos");
 
   toast("Subiendo imagen...");
 
   try {
-    const storageRef = storage.ref(`productos/${Date.now()}_${imageFile.name}`);
-    await storageRef.put(imageFile);
-    const imageURL = await storageRef.getDownloadURL();
+    const storageRef = ref(storage, `productos/${Date.now()}_${imageFile.name}`);
+    await uploadBytes(storageRef, imageFile);
+    const imageURL = await getDownloadURL(storageRef);
 
     products.push({ name, price, sizes, image: imageURL, available: true });
     saveProducts();
     renderProducts();
-    document.getElementById("add-form").reset();
+    e.target.reset();
     toast("Producto agregado con éxito");
   } catch(err) {
     console.error(err);
@@ -63,6 +83,12 @@ function renderProducts() {
 
   products.forEach((p, i) => {
     const isDisabled = !p.available;
+    const adminButtons = isAdmin ? `
+      <button onclick="deleteProduct(${i})" style="background:#dc3545;margin-top:5px;">Eliminar</button>
+      <button onclick="toggleAvailability(${i})" style="background:#ffc107;margin-top:5px;">
+        ${p.available ? "Marcar como agotado" : "Volver disponible"}
+      </button>
+    ` : "";
 
     list.innerHTML += `
       <div class="product">
@@ -72,36 +98,31 @@ function renderProducts() {
         <button ${isDisabled ? "disabled" : ""} onclick="openSizes(${i})">
           ${isDisabled ? "Agotado" : "Ver tallas"}
         </button>
-        ${isAdmin ? `
-          <button onclick="deleteProduct(${i})" style="background:#dc3545;margin-top:5px;">Eliminar</button>
-          <button onclick="toggleAvailability(${i})" style="background:#ffc107;margin-top:5px;">
-            ${p.available ? "Marcar como agotado" : "Volver disponible"}
-          </button>
-        ` : ""}
+        ${adminButtons}
       </div>
     `;
   });
 }
 
 // ===== FUNCIONES ADMIN =====
-function deleteProduct(index) {
+window.deleteProduct = (i) => {
   if(confirm("Eliminar producto?")) {
-    products.splice(index, 1);
+    products.splice(i, 1);
     saveProducts();
     renderProducts();
     toast("Producto eliminado");
   }
-}
+};
 
-function toggleAvailability(index) {
-  products[index].available = !products[index].available;
+window.toggleAvailability = (i) => {
+  products[i].available = !products[i].available;
   saveProducts();
   renderProducts();
-}
+};
 
 // ===== MODAL TALLAS =====
-function openSizes(index) {
-  selectedProduct = products[index];
+function openSizes(i) {
+  selectedProduct = products[i];
   if(!selectedProduct.available) return toast("Producto agotado");
 
   selectedSize = null;
@@ -157,7 +178,7 @@ function updateCartCount() {
   document.getElementById("cart-count").textContent = cart.length;
 }
 
-function openCart() {
+window.openCart = () => {
   const items = document.getElementById("cart-items");
   items.innerHTML = "";
   let total = 0;
@@ -174,33 +195,27 @@ function openCart() {
 
   document.getElementById("cart-total").textContent = total.toFixed(2);
   document.getElementById("cart-modal").classList.remove("hidden");
-}
+};
 
-function removeFromCart(index) {
-  cart.splice(index, 1);
+window.removeFromCart = (i) => {
+  cart.splice(i, 1);
   saveCart();
   updateCartCount();
   openCart();
-}
+};
 
-function checkout() {
+window.checkout = () => {
   if(cart.length === 0) return;
   let msg = "Hola, quiero comprar:\n\n";
-  cart.forEach(item => {
-    msg += `- ${item.name} (talla ${item.size}) - C$${item.price}\n`;
-  });
-  const url = `https://wa.me/${adminPhone}?text=${encodeURIComponent(msg)}`;
+  cart.forEach(item => msg += `- ${item.name} (talla ${item.size}) - C$${item.price}\n`);
+  const url = `https://wa.me/50583647398?text=${encodeURIComponent(msg)}`;
   window.open(url, "_blank");
-}
+};
 
 // ===== CIERRE MODALES =====
 document.getElementById("close-modal").onclick = () => document.getElementById("size-modal").classList.add("hidden");
 document.getElementById("close-cart").onclick = () => document.getElementById("cart-modal").classList.add("hidden");
 
-// ===== TOAST =====
-function toast(msg) {
-  const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.classList.add("show");
-  setTimeout(() => t.classList.remove("show"), 2500);
-}
+// ===== INIT =====
+renderProducts();
+updateCartCount();
