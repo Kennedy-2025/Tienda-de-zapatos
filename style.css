@@ -152,11 +152,6 @@ button:hover {
 .product.out-of-stock { opacity: 0.5; }
 .product.out-of-stock button { background: #6c757d; cursor: not-allowed; }
 
-.modal-content img.large { 
-  margin-bottom: 10px; 
-  border-radius: 8px; 
-}
-
 /* ---------- CARRITO ---------- */
 #cart-items { 
   max-height: 200px; 
@@ -214,11 +209,4 @@ footer {
   bottom: 0;
   width: 100%;
   border-top: 1px solid #0088cc;
-}
-#cart-items { 
-  max-height: 200px; 
-  overflow-y: scroll; /* siempre reserva espacio para el scrollbar */
-  text-align: left; 
-  margin: 10px 0; 
-  padding-right: 5px; /* opcional: evita que el contenido toque el borde */
 }
