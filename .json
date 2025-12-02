@@ -1,15 +1,19 @@
 {
   "name": "tienda-de-zapatos",
   "version": "1.0.0",
-  "description": "Proyecto de tienda de zapatos en Node.js",
+  "description": "Proyecto de tienda de zapatos con Firebase Storage",
+  "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "echo 'Usa un servidor estático como Vercel o Live Server'",
-    "dev": "echo 'Usa Live Server para desarrollo'"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "author": "Kennedy",
   "license": "ISC",
-  "dependencies": {},
+  "dependencies": {
+    "firebase": "^11.1.0",
+    "express": "^4.18.2"
+  },
   "devDependencies": {
     "nodemon": "^3.0.1"
   }
