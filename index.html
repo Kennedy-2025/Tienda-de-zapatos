@@ -8,78 +8,75 @@
 </head>
 <body>
 
-<header>
-  <h1>Zapatería Moderna</h1>
-  <div id="cart">🛒 Carrito: <span id="cart-count">0</span></div>
-</header>
+  <header>
+    <h1>Zapatería Moderna</h1>
+    <div id="cart" onclick="openCart()">🛒 Carrito: <span id="cart-count">0</span></div>
+  </header>
 
-<main>
-  <section id="product-list" class="product-list"></section>
+  <main>
+    <section id="product-list" class="product-list"></section>
 
-  <button id="admin-btn">🔐 Modo administrador</button>
+    <button id="admin-btn">🔐 Modo administrador</button>
 
-  <section id="admin-section" class="hidden admin-panel">
-    <h2>Administrador</h2>
-    <form id="add-form">
-      <input type="text" id="name" placeholder="Nombre del zapato" required>
-      <input type="number" id="price" placeholder="Precio" step="0.01" required>
-      <input type="file" id="image" accept="image/*" required>
-      <input type="text" id="sizes" placeholder="Tallas (ej: 38,39,40)" required>
-      <button type="submit">Agregar</button>
-    </form>
-  </section>
-</main>
+    <section id="admin-section" class="hidden admin-panel">
+      <h2>Administrador</h2>
+      <form id="add-form">
+        <input type="text" id="name" placeholder="Nombre del zapato" required>
+        <input type="number" id="price" placeholder="Precio" step="0.01" required>
+        <input type="file" id="image" accept="image/*" required>
+        <input type="text" id="sizes" placeholder="Tallas (ej: 38,39,40)" required>
+        <button type="submit">Agregar</button>
+      </form>
+    </section>
+  </main>
 
-<!-- MODAL TALLAS -->
-<div id="size-modal" class="modal hidden">
-  <div class="modal-content animate">
-    <span id="close-modal" class="close">&times;</span>
-    <h2 id="modal-product-name"></h2>
-    <div id="size-options" class="sizes"></div>
-    <button id="buy-btn">Agregar al carrito</button>
+  <!-- MODAL TALLAS -->
+  <div id="size-modal" class="modal hidden">
+    <div class="modal-content animate">
+      <span id="close-modal" class="close">&times;</span>
+      <h2 id="modal-product-name"></h2>
+      <div id="size-options" class="sizes"></div>
+      <button id="buy-btn">Agregar al carrito</button>
+    </div>
   </div>
-</div>
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js"></script>
 
-<script>
-  // Tu configuración de Firebase
-  const firebaseConfig = {
-    apiKey: "AIzaSyBjbzxSrLjp3qgl8qaYDfQQgVX5E7DqxUs",
-    authDomain: "zapateria-3d5da.firebaseapp.com",
-    databaseURL: "https://zapateria-3d5da-default-rtdb.firebaseio.com",
-    projectId: "zapateria-3d5da",
-    storageBucket: "zapateria-3d5da.appspot.com",
-    messagingSenderId: "885381797478",
-    appId: "1:885381797478:web:860afaaf0584275bd43fa7",
-    measurementId: "G-4MP0B60M4W"
-  };
-
-  // Inicializar Firebase
-  const app = firebase.initializeApp(firebaseConfig);
-  const storage = firebase.storage();
-</script>
-
-<!-- MODAL CARRITO -->
-<div id="cart-modal" class="modal hidden">
-  <div class="modal-content animate">
-    <span id="close-cart" class="close">&times;</span>
-    <h2>Tu carrito</h2>
-    <div id="cart-items"></div>
-    <h3>Total: C$<span id="cart-total">0.00</span></h3>
-    <button onclick="checkout()">Comprar por WhatsApp</button>
+  <!-- MODAL CARRITO -->
+  <div id="cart-modal" class="modal hidden">
+    <div class="modal-content animate">
+      <span id="close-cart" class="close">&times;</span>
+      <h2>Tu carrito</h2>
+      <div id="cart-items"></div>
+      <h3>Total: C$<span id="cart-total">0.00</span></h3>
+      <button onclick="checkout()">Comprar por WhatsApp</button>
+    </div>
   </div>
-</div>
 
-<div id="toast" class="toast hidden"></div>
+  <div id="toast" class="toast hidden"></div>
 
-<script type="module" src="index.js"></script>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js"></script>
+
+  <script>
+   const firebaseConfig = {
+  apiKey: "AIzaSyBjbzxSrLjp3qgl8qaYDfQQgVX5E7DqxUs",
+  authDomain: "zapateria-3d5da.firebaseapp.com",
+  databaseURL: "https://zapateria-3d5da-default-rtdb.firebaseio.com",
+  projectId: "zapateria-3d5da",
+  storageBucket: "zapateria-3d5da.firebasestorage.app",
+  messagingSenderId: "885381797478",
+  appId: "1:885381797478:web:860afaaf0584275bd43fa7",
+  measurementId: "G-4MP0B60M4W"
+};
+    const app = firebase.initializeApp(firebaseConfig);
+    const storage = firebase.storage();
+  </script>
+
+  <script src="index.js"></script>
+
+</body>
 
 <footer>
   Creado por Kennedy Casco
 </footer>
-
-</body>
 </html>
-
