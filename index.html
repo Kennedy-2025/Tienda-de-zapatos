@@ -6,7 +6,7 @@
   <title>Zapatería Moderna</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    /* Estilos básicos para funcionamiento */
+    /* ESTILOS BASICOS */
     body { font-family: Arial, sans-serif; margin:0; padding:0; }
     header { display:flex; justify-content: space-between; padding: 10px 20px; background:#333; color:#fff; align-items:center; }
     #cart { cursor:pointer; }
@@ -74,7 +74,8 @@
 <!-- FIREBASE v11 MODULAR -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-storage.js";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-storage.js";
+import { getDatabase, ref as dbRef, push, set, onValue } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
 
 // ====== CONFIGURACIÓN FIREBASE ======
 const firebaseConfig = {
@@ -90,6 +91,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const storage = getStorage(app);
+const database = getDatabase(app);
 
 // ====== CONFIG GENERAL ======
 const adminPhone = "50583647398";
@@ -97,19 +99,10 @@ const adminPassword = "1234";
 let selectedProduct = null;
 let selectedSize = null;
 let isAdmin = false;
-let products = JSON.parse(localStorage.getItem("products")) || [
-  { name: "Zapato Deportivo", price: 49.99, image: "https://images.unsplash.com/photo-1596464716121-2a0c1aa02e04?auto=format&fit=crop&w=400&q=80", sizes: [38,39,40,41,42], available: true },
-  { name: "Zapato Elegante", price: 89.99, image: "https://images.unsplash.com/photo-1606811847181-cbde7b78c74c?auto=format&fit=crop&w=400&q=80", sizes: [39,40,41,42,44], available: true }
-];
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
+let products = [];
 
-// ====== GUARDAR DATOS ======
-function saveProducts() { localStorage.setItem("products", JSON.stringify(products)); }
-function saveCart() { localStorage.setItem("cart", JSON.stringify(cart)); }
-
-// ====== FUNCIONES DEL INDEX.JS ======
-
-// toast
+// ====== TOAST ======
 function toast(msg) {
   const t = document.getElementById("toast");
   t.textContent = msg;
@@ -117,6 +110,8 @@ function toast(msg) {
   t.classList.add("show");
   setTimeout(() => { t.classList.remove("show"); t.classList.add("hidden"); }, 2500);
 }
+
+// ====== FUNCIONES ======
 
 // RENDER PRODUCTOS
 function renderProducts() {
@@ -142,7 +137,6 @@ function renderProducts() {
     `;
   });
 }
-renderProducts();
 
 // ADMIN
 document.getElementById("admin-btn").onclick = () => {
@@ -154,31 +148,55 @@ document.getElementById("admin-btn").onclick = () => {
   renderProducts();
 };
 
-// AGREGAR PRODUCTO CON IMAGEN
+// AGREGAR PRODUCTO
 document.getElementById("add-form").onsubmit = async (e) => {
   e.preventDefault();
   if (!isAdmin) return toast("Acción no permitida");
+
   const name = document.getElementById("name").value.trim();
   const price = parseFloat(document.getElementById("price").value);
   const file = document.getElementById("image").files[0];
-  const sizes = document.getElementById("sizes").value.split(",").map(s => Number(s.trim())).filter(n => !isNaN(n));
-  if (!name || !file || sizes.length === 0 || isNaN(price)) return toast("Datos inválidos");
+  const sizes = document.getElementById("sizes").value.split(",").map(s=>Number(s.trim())).filter(n=>!isNaN(n));
+
+  if (!name || !file || sizes.length===0 || isNaN(price)) return toast("Datos inválidos");
   toast("Subiendo imagen...");
+
   try {
-    const storageRef = ref(storage, `productos/${Date.now()}_${file.name}`);
-    await uploadBytes(storageRef, file);
-    const imageURL = await getDownloadURL(storageRef);
-    products.push({ name, price, image: imageURL, sizes, available:true });
-    saveProducts();
-    renderProducts();
+    const storageReference = storageRef(storage, `productos/${Date.now()}_${file.name}`);
+    await uploadBytes(storageReference, file);
+    const imageURL = await getDownloadURL(storageReference);
+
+    // Guardar producto en DB
+    const productsReference = dbRef(database, 'products');
+    await push(productsReference, { name, price, image:imageURL, sizes, available:true });
+
     e.target.reset();
     toast("Producto agregado con éxito");
   } catch(err) { console.error(err); toast("Error subiendo imagen"); }
 };
 
-// ELIMINAR Y DESACTIVAR
-window.deleteProduct = (i) => { if(!isAdmin) return toast("Acción no permitida"); if(!confirm("¿Eliminar producto?")) return; products.splice(i,1); saveProducts(); renderProducts(); toast("Producto eliminado"); };
-window.toggleAvailability = (i) => { products[i].available = !products[i].available; saveProducts(); renderProducts(); toast(products[i].available ? "Disponible" : "Agotado"); };
+// ESCUCHAR PRODUCTOS EN TIEMPO REAL
+const productsReference = dbRef(database, 'products');
+onValue(productsReference, (snapshot) => {
+  const data = snapshot.val();
+  products = [];
+  if (data) products = Object.keys(data).map(key => ({ id:key, ...data[key] }));
+  renderProducts();
+});
+
+// ELIMINAR Y CAMBIAR DISPONIBILIDAD
+window.deleteProduct = async (i) => {
+  if (!isAdmin) return toast("Acción no permitida");
+  if (!confirm("¿Eliminar producto?")) return;
+  await set(dbRef(database,'products/'+products[i].id), null);
+  toast("Producto eliminado");
+};
+
+window.toggleAvailability = async (i) => {
+  const product = products[i];
+  await set(dbRef(database,'products/'+product.id), {...product, available:!product.available});
+  toast(product.available ? "Agotado" : "Disponible");
+};
 
 // MODAL TALLAS
 window.openSizes = (index) => {
@@ -186,35 +204,47 @@ window.openSizes = (index) => {
   document.getElementById("modal-product-name").textContent = selectedProduct.name;
   const modalContent = document.querySelector("#size-modal .modal-content");
   const oldImg = modalContent.querySelector("img.large"); if(oldImg) oldImg.remove();
-  const img = document.createElement("img"); img.src = selectedProduct.image; img.classList.add("large"); modalContent.prepend(img);
-  const box = document.getElementById("size-options"); box.innerHTML = "";
-  selectedProduct.sizes.forEach(size => { const btn = document.createElement("button"); btn.textContent = size; btn.onclick = () => selectSize(size,btn); box.appendChild(btn); });
-  document.getElementById("buy-btn").disabled = true;
+  const img = document.createElement("img"); img.src=selectedProduct.image; img.classList.add("large"); modalContent.prepend(img);
+  const box = document.getElementById("size-options"); box.innerHTML="";
+  selectedProduct.sizes.forEach(size => { const btn=document.createElement("button"); btn.textContent=size; btn.onclick=()=>selectSize(size,btn); box.appendChild(btn); });
+  document.getElementById("buy-btn").disabled=true;
   document.getElementById("size-modal").classList.remove("hidden");
 };
-function selectSize(size, btn) { selectedSize = size; document.querySelectorAll("#size-options button").forEach(b=>b.classList.remove("selected")); btn.classList.add("selected"); document.getElementById("buy-btn").disabled=false; toast(`Talla ${size} seleccionada`); }
+function selectSize(size, btn) {
+  selectedSize=size;
+  document.querySelectorAll("#size-options button").forEach(b=>b.classList.remove("selected"));
+  btn.classList.add("selected");
+  document.getElementById("buy-btn").disabled=false;
+  toast(`Talla ${size} seleccionada`);
+}
 
 // CARRITO
 document.getElementById("buy-btn").onclick = () => {
   if(!selectedSize) return;
   cart.push({ name:selectedProduct.name, price:selectedProduct.price, size:selectedSize, image:selectedProduct.image });
-  saveCart(); updateCartCount(); toast("Agregado al carrito"); document.getElementById("size-modal").classList.add("hidden");
+  localStorage.setItem("cart", JSON.stringify(cart));
+  updateCartCount();
+  toast("Agregado al carrito");
+  document.getElementById("size-modal").classList.add("hidden");
 };
+
 function updateCartCount() { document.getElementById("cart-count").textContent = cart.length; }
+
 window.openCart = () => {
   const items = document.getElementById("cart-items"); items.innerHTML=""; let total=0;
   cart.forEach((item,index)=>{ total+=item.price; items.innerHTML+=`<div class="cart-item"><span>${item.name} (talla ${item.size}) - C$${item.price.toFixed(2)}</span><button onclick="removeFromCart(${index})">Eliminar</button></div>`; });
-  document.getElementById("cart-total").textContent = total.toFixed(2);
+  document.getElementById("cart-total").textContent=total.toFixed(2);
   document.getElementById("cart-modal").classList.remove("hidden");
 };
-window.removeFromCart = (i)=>{ cart.splice(i,1); saveCart(); openCart(); updateCartCount(); };
+
+window.removeFromCart = (i) => { cart.splice(i,1); localStorage.setItem("cart", JSON.stringify(cart)); openCart(); updateCartCount(); };
 
 // WHATSAPP
 window.checkout = () => {
   if(cart.length===0) return toast("El carrito está vacío");
-  let msg = "Hola, quiero comprar:\n\n";
+  let msg="Hola, quiero comprar:\n\n";
   cart.forEach(item=>{ msg+=`- ${item.name} (talla ${item.size}) - C$${item.price.toFixed(2)}\nImagen: ${item.image}\n\n`; });
-  const url = `https://wa.me/${adminPhone}?text=${encodeURIComponent(msg)}`;
+  const url=`https://wa.me/${adminPhone}?text=${encodeURIComponent(msg)}`;
   window.open(url,"_blank");
 };
 
@@ -228,6 +258,5 @@ updateCartCount();
 <footer>
   Creado por Kennedy Casco
 </footer>
-
 </body>
 </html>
