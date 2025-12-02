@@ -4,25 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Zapatería Moderna</title>
-  <link rel="stylesheet" href="style.css">
-  <style>
-    /* ESTILOS BASICOS */
-    body { font-family: Arial, sans-serif; margin:0; padding:0; }
-    header { display:flex; justify-content: space-between; padding: 10px 20px; background:#333; color:#fff; align-items:center; }
-    #cart { cursor:pointer; }
-    .product-list { display:flex; flex-wrap:wrap; gap:15px; padding:20px; }
-    .product { border:1px solid #ccc; padding:10px; width:200px; text-align:center; }
-    .product img { width:100%; cursor:pointer; }
-    .hidden { display:none; }
-    .modal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; }
-    .modal-content { background:#fff; padding:20px; position:relative; max-width:400px; width:90%; border-radius:5px; }
-    .close { position:absolute; top:10px; right:15px; cursor:pointer; font-size:20px; }
-    .sizes button { margin:5px; }
-    .selected { background:#28a745; color:#fff; }
-    .toast { position:fixed; bottom:10px; left:50%; transform:translateX(-50%); background:#333; color:#fff; padding:10px 20px; border-radius:5px; opacity:0; transition:opacity 0.3s; }
-    .toast.show { opacity:1; }
-    footer { text-align:center; padding:10px; background:#f2f2f2; margin-top:20px; }
-  </style>
 </head>
 <body>
 
@@ -71,13 +52,12 @@
 
 <div id="toast" class="toast hidden"></div>
 
-<!-- FIREBASE v11 MODULAR -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-storage.js";
 import { getDatabase, ref as dbRef, push, set, onValue } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
 
-// ====== CONFIGURACIÓN FIREBASE ======
+// ===== CONFIG FIREBASE =====
 const firebaseConfig = {
   apiKey: "AIzaSyBjbzxSrLjp3qgl8qaYDfQQgVX5E7DqxUs",
   authDomain: "zapateria-3d5da.firebaseapp.com",
@@ -93,7 +73,7 @@ const app = initializeApp(firebaseConfig);
 const storage = getStorage(app);
 const database = getDatabase(app);
 
-// ====== CONFIG GENERAL ======
+// ===== CONFIG GENERAL =====
 const adminPhone = "50583647398";
 const adminPassword = "1234";
 let selectedProduct = null;
@@ -102,115 +82,111 @@ let isAdmin = false;
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
 let products = [];
 
-// ====== TOAST ======
-function toast(msg) {
+// ===== TOAST =====
+function toast(msg){
   const t = document.getElementById("toast");
   t.textContent = msg;
   t.classList.remove("hidden");
   t.classList.add("show");
-  setTimeout(() => { t.classList.remove("show"); t.classList.add("hidden"); }, 2500);
+  setTimeout(()=>{ t.classList.remove("show"); t.classList.add("hidden"); },2500);
 }
 
-// ====== FUNCIONES ======
+// ===== FUNCIONES =====
 
 // RENDER PRODUCTOS
-function renderProducts() {
+function renderProducts(){
   const list = document.getElementById("product-list");
-  list.innerHTML = "";
-  products.forEach((p, i) => {
+  list.innerHTML="";
+  products.forEach((p,i)=>{
     const isDisabled = !p.available;
     list.innerHTML += `
       <div class="product">
         <img src="${p.image}" onclick="${isDisabled ? 'toast(`Producto agotado`)' : `openSizes(${i})`}">
-        <h3>${p.name} ${!p.available ? '<span style="color:red">(Agotado)</span>' : ''}</h3>
+        <h3>${p.name} ${!p.available?'<span style="color:red">(Agotado)</span>':''}</h3>
         <p>C$${p.price.toFixed(2)}</p>
-        <button ${isDisabled ? "disabled" : ""} onclick="openSizes(${i})">
-          ${isDisabled ? "Agotado" : "Ver tallas"}
+        <button ${isDisabled?'disabled':''} onclick="openSizes(${i})">
+          ${isDisabled?'Agotado':'Ver tallas'}
         </button>
-        ${isAdmin ? `
+        ${isAdmin?`
           <button onclick="deleteProduct(${i})" style="background:#dc3545;margin-top:5px">Eliminar</button>
           <button onclick="toggleAvailability(${i})" style="background:#ffc107;margin-top:5px">
-            ${p.available ? "Marcar como agotado" : "Volver disponible"}
+            ${p.available?"Marcar como agotado":"Volver disponible"}
           </button>
-        ` : ""}
+        `:''}
       </div>
     `;
   });
 }
 
 // ADMIN
-document.getElementById("admin-btn").onclick = () => {
+document.getElementById("admin-btn").onclick = ()=>{
   const password = prompt("Contraseña de administrador:");
-  if (password !== adminPassword) return toast("Contraseña incorrecta");
+  if(password!==adminPassword) return toast("Contraseña incorrecta");
   isAdmin = !isAdmin;
-  toast(isAdmin ? "Modo administrador activado" : "Modo administrador desactivado");
+  toast(isAdmin?"Modo administrador activado":"Modo administrador desactivado");
   document.getElementById("admin-section").classList.toggle("hidden");
   renderProducts();
 };
 
 // AGREGAR PRODUCTO
-document.getElementById("add-form").onsubmit = async (e) => {
+document.getElementById("add-form").onsubmit = async (e)=>{
   e.preventDefault();
-  if (!isAdmin) return toast("Acción no permitida");
-
+  if(!isAdmin) return toast("Acción no permitida");
   const name = document.getElementById("name").value.trim();
   const price = parseFloat(document.getElementById("price").value);
   const file = document.getElementById("image").files[0];
   const sizes = document.getElementById("sizes").value.split(",").map(s=>Number(s.trim())).filter(n=>!isNaN(n));
-
-  if (!name || !file || sizes.length===0 || isNaN(price)) return toast("Datos inválidos");
+  if(!name || !file || sizes.length===0 || isNaN(price)) return toast("Datos inválidos");
   toast("Subiendo imagen...");
 
-  try {
+  try{
     const storageReference = storageRef(storage, `productos/${Date.now()}_${file.name}`);
     await uploadBytes(storageReference, file);
     const imageURL = await getDownloadURL(storageReference);
-
-    // Guardar producto en DB
-    const productsReference = dbRef(database, 'products');
-    await push(productsReference, { name, price, image:imageURL, sizes, available:true });
-
+    const productsReference = dbRef(database,'products');
+    await push(productsReference,{ name, price, image:imageURL, sizes, available:true });
     e.target.reset();
     toast("Producto agregado con éxito");
-  } catch(err) { console.error(err); toast("Error subiendo imagen"); }
+  }catch(err){ console.error(err); toast("Error subiendo imagen"); }
 };
 
 // ESCUCHAR PRODUCTOS EN TIEMPO REAL
-const productsReference = dbRef(database, 'products');
-onValue(productsReference, (snapshot) => {
+const productsReference = dbRef(database,'products');
+onValue(productsReference,(snapshot)=>{
   const data = snapshot.val();
-  products = [];
-  if (data) products = Object.keys(data).map(key => ({ id:key, ...data[key] }));
+  products=[];
+  if(data) products=Object.keys(data).map(key=>({ id:key, ...data[key] }));
   renderProducts();
 });
 
-// ELIMINAR Y CAMBIAR DISPONIBILIDAD
-window.deleteProduct = async (i) => {
-  if (!isAdmin) return toast("Acción no permitida");
-  if (!confirm("¿Eliminar producto?")) return;
-  await set(dbRef(database,'products/'+products[i].id), null);
+// ELIMINAR Y TOGGLE DISPONIBILIDAD
+window.deleteProduct = async (i)=>{
+  if(!isAdmin) return toast("Acción no permitida");
+  if(!confirm("¿Eliminar producto?")) return;
+  await set(dbRef(database,'products/'+products[i].id),null);
   toast("Producto eliminado");
 };
 
-window.toggleAvailability = async (i) => {
-  const product = products[i];
-  await set(dbRef(database,'products/'+product.id), {...product, available:!product.available});
-  toast(product.available ? "Agotado" : "Disponible");
+window.toggleAvailability = async (i)=>{
+  const p = products[i];
+  await set(dbRef(database,'products/'+p.id),{...p, available:!p.available});
+  toast(p.available?"Agotado":"Disponible");
 };
 
 // MODAL TALLAS
-window.openSizes = (index) => {
-  selectedProduct = products[index]; selectedSize = null;
+window.openSizes = (index)=>{
+  selectedProduct = products[index]; selectedSize=null;
   document.getElementById("modal-product-name").textContent = selectedProduct.name;
   const modalContent = document.querySelector("#size-modal .modal-content");
   const oldImg = modalContent.querySelector("img.large"); if(oldImg) oldImg.remove();
   const img = document.createElement("img"); img.src=selectedProduct.image; img.classList.add("large"); modalContent.prepend(img);
   const box = document.getElementById("size-options"); box.innerHTML="";
-  selectedProduct.sizes.forEach(size => { const btn=document.createElement("button"); btn.textContent=size; btn.onclick=()=>selectSize(size,btn); box.appendChild(btn); });
+  selectedProduct.sizes.forEach(size=>{ const btn=document.createElement("button"); btn.textContent=size; btn.onclick=()=>selectSize(size,btn); box.appendChild(btn); });
   document.getElementById("buy-btn").disabled=true;
   document.getElementById("size-modal").classList.remove("hidden");
 };
-function selectSize(size, btn) {
+
+function selectSize(size,btn){
   selectedSize=size;
   document.querySelectorAll("#size-options button").forEach(b=>b.classList.remove("selected"));
   btn.classList.add("selected");
@@ -219,28 +195,28 @@ function selectSize(size, btn) {
 }
 
 // CARRITO
-document.getElementById("buy-btn").onclick = () => {
+document.getElementById("buy-btn").onclick = ()=>{
   if(!selectedSize) return;
   cart.push({ name:selectedProduct.name, price:selectedProduct.price, size:selectedSize, image:selectedProduct.image });
-  localStorage.setItem("cart", JSON.stringify(cart));
+  localStorage.setItem("cart",JSON.stringify(cart));
   updateCartCount();
   toast("Agregado al carrito");
   document.getElementById("size-modal").classList.add("hidden");
 };
 
-function updateCartCount() { document.getElementById("cart-count").textContent = cart.length; }
+function updateCartCount(){ document.getElementById("cart-count").textContent=cart.length; }
 
-window.openCart = () => {
+window.openCart = ()=>{
   const items = document.getElementById("cart-items"); items.innerHTML=""; let total=0;
   cart.forEach((item,index)=>{ total+=item.price; items.innerHTML+=`<div class="cart-item"><span>${item.name} (talla ${item.size}) - C$${item.price.toFixed(2)}</span><button onclick="removeFromCart(${index})">Eliminar</button></div>`; });
   document.getElementById("cart-total").textContent=total.toFixed(2);
   document.getElementById("cart-modal").classList.remove("hidden");
 };
 
-window.removeFromCart = (i) => { cart.splice(i,1); localStorage.setItem("cart", JSON.stringify(cart)); openCart(); updateCartCount(); };
+window.removeFromCart=(i)=>{ cart.splice(i,1); localStorage.setItem("cart",JSON.stringify(cart)); openCart(); updateCartCount(); };
 
 // WHATSAPP
-window.checkout = () => {
+window.checkout=()=>{
   if(cart.length===0) return toast("El carrito está vacío");
   let msg="Hola, quiero comprar:\n\n";
   cart.forEach(item=>{ msg+=`- ${item.name} (talla ${item.size}) - C$${item.price.toFixed(2)}\nImagen: ${item.image}\n\n`; });
@@ -249,8 +225,8 @@ window.checkout = () => {
 };
 
 // CIERRE MODALES
-document.getElementById("close-modal").onclick = () => document.getElementById("size-modal").classList.add("hidden");
-document.getElementById("close-cart").onclick = () => document.getElementById("cart-modal").classList.add("hidden");
+document.getElementById("close-modal").onclick=()=>document.getElementById("size-modal").classList.add("hidden");
+document.getElementById("close-cart").onclick=()=>document.getElementById("cart-modal").classList.add("hidden");
 
 updateCartCount();
 </script>
