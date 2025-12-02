@@ -23,48 +23,55 @@
       <form id="add-form">
         <input type="text" id="name" placeholder="Nombre del zapato" required>
         <input type="number" id="price" placeholder="Precio" step="0.01" required>
-
-        <!-- Aquí subes la imagen desde tu teléfono o PC -->
         <input type="file" id="image" accept="image/*" required>
-
         <input type="text" id="sizes" placeholder="Tallas (ej: 38,39,40)" required>
-
         <button type="submit">Agregar</button>
       </form>
     </section>
   </main>
 
-  <!-- MODAL DE TALLAS -->
+  <!-- MODAL TALLAS -->
   <div id="size-modal" class="modal hidden">
     <div class="modal-content animate">
-
       <span id="close-modal" class="close">&times;</span>
-
       <h2 id="modal-product-name"></h2>
-
-      <!-- FALTA IMPORTANTE: espacio donde se insertará la imagen grande -->
       <div id="image-container"></div>
-
       <div id="size-options" class="sizes"></div>
-
       <button id="buy-btn">Agregar al carrito</button>
     </div>
   </div>
 
-  <!-- MODAL DEL CARRITO -->
+  <!-- MODAL CARRITO -->
   <div id="cart-modal" class="modal hidden">
     <div class="modal-content animate">
       <span id="close-cart" class="close">&times;</span>
       <h2>Tu carrito</h2>
       <div id="cart-items"></div>
       <h3>Total: C$<span id="cart-total">0.00</span></h3>
-
       <button onclick="checkout()">Comprar por WhatsApp</button>
     </div>
   </div>
 
-  <!-- TOAST (mensajes emergentes) -->
   <div id="toast" class="toast hidden"></div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js"></script>
+
+  <!-- TU CONFIG FIREBASE -->
+  <script>
+    const firebaseConfig = {
+      apiKey: "TU_API_KEY",
+      authDomain: "TU_AUTH_DOMAIN",
+      projectId: "TU_PROJECT_ID",
+      storageBucket: "TU_BUCKET",
+      messagingSenderId: "ID",
+      appId: "ID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const storage = firebase.storage();
+  </script>
 
   <script src="index.js"></script>
 
