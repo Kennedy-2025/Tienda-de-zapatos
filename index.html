@@ -5,60 +5,79 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Zapatería Moderna</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    /* Estilos básicos para funcionamiento */
+    body { font-family: Arial, sans-serif; margin:0; padding:0; }
+    header { display:flex; justify-content: space-between; padding: 10px 20px; background:#333; color:#fff; align-items:center; }
+    #cart { cursor:pointer; }
+    .product-list { display:flex; flex-wrap:wrap; gap:15px; padding:20px; }
+    .product { border:1px solid #ccc; padding:10px; width:200px; text-align:center; }
+    .product img { width:100%; cursor:pointer; }
+    .hidden { display:none; }
+    .modal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; }
+    .modal-content { background:#fff; padding:20px; position:relative; max-width:400px; width:90%; border-radius:5px; }
+    .close { position:absolute; top:10px; right:15px; cursor:pointer; font-size:20px; }
+    .sizes button { margin:5px; }
+    .selected { background:#28a745; color:#fff; }
+    .toast { position:fixed; bottom:10px; left:50%; transform:translateX(-50%); background:#333; color:#fff; padding:10px 20px; border-radius:5px; opacity:0; transition:opacity 0.3s; }
+    .toast.show { opacity:1; }
+    footer { text-align:center; padding:10px; background:#f2f2f2; margin-top:20px; }
+  </style>
 </head>
 <body>
 
-  <header>
-    <h1>Zapatería Moderna</h1>
-    <div id="cart" onclick="openCart()">🛒 Carrito: <span id="cart-count">0</span></div>
-  </header>
+<header>
+  <h1>Zapatería Moderna</h1>
+  <div id="cart" onclick="openCart()">🛒 Carrito: <span id="cart-count">0</span></div>
+</header>
 
-  <main>
-    <section id="product-list" class="product-list"></section>
+<main>
+  <section id="product-list" class="product-list"></section>
 
-    <button id="admin-btn">🔐 Modo administrador</button>
+  <button id="admin-btn">🔐 Modo administrador</button>
 
-    <section id="admin-section" class="hidden admin-panel">
-      <h2>Administrador</h2>
-      <form id="add-form">
-        <input type="text" id="name" placeholder="Nombre del zapato" required>
-        <input type="number" id="price" placeholder="Precio" step="0.01" required>
-        <input type="file" id="image" accept="image/*" required>
-        <input type="text" id="sizes" placeholder="Tallas (ej: 38,39,40)" required>
-        <button type="submit">Agregar</button>
-      </form>
-    </section>
-  </main>
+  <section id="admin-section" class="hidden admin-panel">
+    <h2>Administrador</h2>
+    <form id="add-form">
+      <input type="text" id="name" placeholder="Nombre del zapato" required>
+      <input type="number" id="price" placeholder="Precio" step="0.01" required>
+      <input type="file" id="image" accept="image/*" required>
+      <input type="text" id="sizes" placeholder="Tallas (ej: 38,39,40)" required>
+      <button type="submit">Agregar</button>
+    </form>
+  </section>
+</main>
 
-  <!-- MODAL TALLAS -->
-  <div id="size-modal" class="modal hidden">
-    <div class="modal-content animate">
-      <span id="close-modal" class="close">&times;</span>
-      <h2 id="modal-product-name"></h2>
-      <div id="size-options" class="sizes"></div>
-      <button id="buy-btn">Agregar al carrito</button>
-    </div>
+<!-- MODAL TALLAS -->
+<div id="size-modal" class="modal hidden">
+  <div class="modal-content animate">
+    <span id="close-modal" class="close">&times;</span>
+    <h2 id="modal-product-name"></h2>
+    <div id="size-options" class="sizes"></div>
+    <button id="buy-btn">Agregar al carrito</button>
   </div>
+</div>
 
-  <!-- MODAL CARRITO -->
-  <div id="cart-modal" class="modal hidden">
-    <div class="modal-content animate">
-      <span id="close-cart" class="close">&times;</span>
-      <h2>Tu carrito</h2>
-      <div id="cart-items"></div>
-      <h3>Total: C$<span id="cart-total">0.00</span></h3>
-      <button onclick="checkout()">Comprar por WhatsApp</button>
-    </div>
+<!-- MODAL CARRITO -->
+<div id="cart-modal" class="modal hidden">
+  <div class="modal-content animate">
+    <span id="close-cart" class="close">&times;</span>
+    <h2>Tu carrito</h2>
+    <div id="cart-items"></div>
+    <h3>Total: C$<span id="cart-total">0.00</span></h3>
+    <button onclick="checkout()">Comprar por WhatsApp</button>
   </div>
+</div>
 
-  <div id="toast" class="toast hidden"></div>
+<div id="toast" class="toast hidden"></div>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js"></script>
+<!-- FIREBASE v11 MODULAR -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-storage.js";
 
-  <script>
-   const firebaseConfig = {
+// ====== CONFIGURACIÓN FIREBASE ======
+const firebaseConfig = {
   apiKey: "AIzaSyBjbzxSrLjp3qgl8qaYDfQQgVX5E7DqxUs",
   authDomain: "zapateria-3d5da.firebaseapp.com",
   databaseURL: "https://zapateria-3d5da-default-rtdb.firebaseio.com",
@@ -68,15 +87,147 @@
   appId: "1:885381797478:web:860afaaf0584275bd43fa7",
   measurementId: "G-4MP0B60M4W"
 };
-    const app = firebase.initializeApp(firebaseConfig);
-    const storage = firebase.storage();
-  </script>
 
-  <script src="index.js"></script>
+const app = initializeApp(firebaseConfig);
+const storage = getStorage(app);
 
-</body>
+// ====== CONFIG GENERAL ======
+const adminPhone = "50583647398";
+const adminPassword = "1234";
+let selectedProduct = null;
+let selectedSize = null;
+let isAdmin = false;
+let products = JSON.parse(localStorage.getItem("products")) || [
+  { name: "Zapato Deportivo", price: 49.99, image: "https://images.unsplash.com/photo-1596464716121-2a0c1aa02e04?auto=format&fit=crop&w=400&q=80", sizes: [38,39,40,41,42], available: true },
+  { name: "Zapato Elegante", price: 89.99, image: "https://images.unsplash.com/photo-1606811847181-cbde7b78c74c?auto=format&fit=crop&w=400&q=80", sizes: [39,40,41,42,44], available: true }
+];
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+// ====== GUARDAR DATOS ======
+function saveProducts() { localStorage.setItem("products", JSON.stringify(products)); }
+function saveCart() { localStorage.setItem("cart", JSON.stringify(cart)); }
+
+// ====== FUNCIONES DEL INDEX.JS ======
+
+// toast
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.remove("hidden");
+  t.classList.add("show");
+  setTimeout(() => { t.classList.remove("show"); t.classList.add("hidden"); }, 2500);
+}
+
+// RENDER PRODUCTOS
+function renderProducts() {
+  const list = document.getElementById("product-list");
+  list.innerHTML = "";
+  products.forEach((p, i) => {
+    const isDisabled = !p.available;
+    list.innerHTML += `
+      <div class="product">
+        <img src="${p.image}" onclick="${isDisabled ? 'toast(`Producto agotado`)' : `openSizes(${i})`}">
+        <h3>${p.name} ${!p.available ? '<span style="color:red">(Agotado)</span>' : ''}</h3>
+        <p>C$${p.price.toFixed(2)}</p>
+        <button ${isDisabled ? "disabled" : ""} onclick="openSizes(${i})">
+          ${isDisabled ? "Agotado" : "Ver tallas"}
+        </button>
+        ${isAdmin ? `
+          <button onclick="deleteProduct(${i})" style="background:#dc3545;margin-top:5px">Eliminar</button>
+          <button onclick="toggleAvailability(${i})" style="background:#ffc107;margin-top:5px">
+            ${p.available ? "Marcar como agotado" : "Volver disponible"}
+          </button>
+        ` : ""}
+      </div>
+    `;
+  });
+}
+renderProducts();
+
+// ADMIN
+document.getElementById("admin-btn").onclick = () => {
+  const password = prompt("Contraseña de administrador:");
+  if (password !== adminPassword) return toast("Contraseña incorrecta");
+  isAdmin = !isAdmin;
+  toast(isAdmin ? "Modo administrador activado" : "Modo administrador desactivado");
+  document.getElementById("admin-section").classList.toggle("hidden");
+  renderProducts();
+};
+
+// AGREGAR PRODUCTO CON IMAGEN
+document.getElementById("add-form").onsubmit = async (e) => {
+  e.preventDefault();
+  if (!isAdmin) return toast("Acción no permitida");
+  const name = document.getElementById("name").value.trim();
+  const price = parseFloat(document.getElementById("price").value);
+  const file = document.getElementById("image").files[0];
+  const sizes = document.getElementById("sizes").value.split(",").map(s => Number(s.trim())).filter(n => !isNaN(n));
+  if (!name || !file || sizes.length === 0 || isNaN(price)) return toast("Datos inválidos");
+  toast("Subiendo imagen...");
+  try {
+    const storageRef = ref(storage, `productos/${Date.now()}_${file.name}`);
+    await uploadBytes(storageRef, file);
+    const imageURL = await getDownloadURL(storageRef);
+    products.push({ name, price, image: imageURL, sizes, available:true });
+    saveProducts();
+    renderProducts();
+    e.target.reset();
+    toast("Producto agregado con éxito");
+  } catch(err) { console.error(err); toast("Error subiendo imagen"); }
+};
+
+// ELIMINAR Y DESACTIVAR
+window.deleteProduct = (i) => { if(!isAdmin) return toast("Acción no permitida"); if(!confirm("¿Eliminar producto?")) return; products.splice(i,1); saveProducts(); renderProducts(); toast("Producto eliminado"); };
+window.toggleAvailability = (i) => { products[i].available = !products[i].available; saveProducts(); renderProducts(); toast(products[i].available ? "Disponible" : "Agotado"); };
+
+// MODAL TALLAS
+window.openSizes = (index) => {
+  selectedProduct = products[index]; selectedSize = null;
+  document.getElementById("modal-product-name").textContent = selectedProduct.name;
+  const modalContent = document.querySelector("#size-modal .modal-content");
+  const oldImg = modalContent.querySelector("img.large"); if(oldImg) oldImg.remove();
+  const img = document.createElement("img"); img.src = selectedProduct.image; img.classList.add("large"); modalContent.prepend(img);
+  const box = document.getElementById("size-options"); box.innerHTML = "";
+  selectedProduct.sizes.forEach(size => { const btn = document.createElement("button"); btn.textContent = size; btn.onclick = () => selectSize(size,btn); box.appendChild(btn); });
+  document.getElementById("buy-btn").disabled = true;
+  document.getElementById("size-modal").classList.remove("hidden");
+};
+function selectSize(size, btn) { selectedSize = size; document.querySelectorAll("#size-options button").forEach(b=>b.classList.remove("selected")); btn.classList.add("selected"); document.getElementById("buy-btn").disabled=false; toast(`Talla ${size} seleccionada`); }
+
+// CARRITO
+document.getElementById("buy-btn").onclick = () => {
+  if(!selectedSize) return;
+  cart.push({ name:selectedProduct.name, price:selectedProduct.price, size:selectedSize, image:selectedProduct.image });
+  saveCart(); updateCartCount(); toast("Agregado al carrito"); document.getElementById("size-modal").classList.add("hidden");
+};
+function updateCartCount() { document.getElementById("cart-count").textContent = cart.length; }
+window.openCart = () => {
+  const items = document.getElementById("cart-items"); items.innerHTML=""; let total=0;
+  cart.forEach((item,index)=>{ total+=item.price; items.innerHTML+=`<div class="cart-item"><span>${item.name} (talla ${item.size}) - C$${item.price.toFixed(2)}</span><button onclick="removeFromCart(${index})">Eliminar</button></div>`; });
+  document.getElementById("cart-total").textContent = total.toFixed(2);
+  document.getElementById("cart-modal").classList.remove("hidden");
+};
+window.removeFromCart = (i)=>{ cart.splice(i,1); saveCart(); openCart(); updateCartCount(); };
+
+// WHATSAPP
+window.checkout = () => {
+  if(cart.length===0) return toast("El carrito está vacío");
+  let msg = "Hola, quiero comprar:\n\n";
+  cart.forEach(item=>{ msg+=`- ${item.name} (talla ${item.size}) - C$${item.price.toFixed(2)}\nImagen: ${item.image}\n\n`; });
+  const url = `https://wa.me/${adminPhone}?text=${encodeURIComponent(msg)}`;
+  window.open(url,"_blank");
+};
+
+// CIERRE MODALES
+document.getElementById("close-modal").onclick = () => document.getElementById("size-modal").classList.add("hidden");
+document.getElementById("close-cart").onclick = () => document.getElementById("cart-modal").classList.add("hidden");
+
+updateCartCount();
+</script>
 
 <footer>
   Creado por Kennedy Casco
 </footer>
+
+</body>
 </html>
