@@ -4,12 +4,14 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 
 // Config Firebase
 const firebaseConfig = {
-  apiKey: "TU_API_KEY",
-  authDomain: "TU_AUTH_DOMAIN",
-  projectId: "TU_PROJECT_ID",
-  storageBucket: "TU_BUCKET",
-  messagingSenderId: "TU_SENDER_ID",
-  appId: "TU_APP_ID"
+  apiKey: "AIzaSyBjbzxSrLjp3qgl8qaYDfQQgVX5E7DqxUs",
+  authDomain: "zapateria-3d5da.firebaseapp.com",
+  databaseURL: "https://zapateria-3d5da-default-rtdb.firebaseio.com",
+  projectId: "zapateria-3d5da",
+  storageBucket: "zapateria-3d5da.firebasestorage.app",
+  messagingSenderId: "885381797478",
+  appId: "1:885381797478:web:860afaaf0584275bd43fa7",
+  measurementId: "G-4MP0B60M4W"
 };
 
 // Inicializar Firebase
