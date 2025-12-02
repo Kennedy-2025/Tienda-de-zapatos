@@ -12,14 +12,24 @@ let products = JSON.parse(localStorage.getItem("products")) || [];
 function saveProducts() { localStorage.setItem("products", JSON.stringify(products)); }
 function saveCart() { localStorage.setItem("cart", JSON.stringify(cart)); }
 
-// Render inicial
+// ================= RENDER INICIAL =================
 renderProducts();
 updateCartCount();
 
-// ================= FIREBASE STORAGE =================
-const storage = firebase.storage();
+// ================= FUNCIONES ADMIN =================
+document.getElementById("admin-btn").onclick = () => {
+  const password = prompt("Contraseña de administrador:");
+  if(password === adminPassword){
+    isAdmin = !isAdmin;
+    document.getElementById("admin-section").classList.toggle("hidden", !isAdmin);
+    renderProducts();
+    toast(isAdmin ? "Modo admin activado" : "Modo admin desactivado");
+  } else {
+    toast("Contraseña incorrecta");
+  }
+};
 
-// ================= AGREGAR PRODUCTO =================
+// ================= AGREGAR PRODUCTO A FIREBASE =================
 document.getElementById("add-form").onsubmit = async e => {
   e.preventDefault();
   if(!isAdmin) return toast("No autorizado");
@@ -36,7 +46,7 @@ document.getElementById("add-form").onsubmit = async e => {
   toast("Subiendo imagen...");
 
   try {
-    const storageRef = storage.ref(`productos/${Date.now()}_${imageFile.name}`);
+    const storageRef = firebase.storage().ref(`productos/${Date.now()}_${imageFile.name}`);
     await storageRef.put(imageFile);
     const imageURL = await storageRef.getDownloadURL();
 
@@ -51,56 +61,63 @@ document.getElementById("add-form").onsubmit = async e => {
     saveProducts();
     renderProducts();
     document.getElementById("add-form").reset();
-    toast("Producto agregado con éxito");
+    toast("Producto agregado correctamente");
 
-  } catch (err) {
+  } catch(err) {
     console.error(err);
     toast("Error subiendo la imagen");
   }
 };
 
 // ================= RENDER PRODUCTOS =================
-function renderProducts() {
+function renderProducts(){
   const list = document.getElementById("product-list");
   list.innerHTML = "";
 
   products.forEach((p, i) => {
     const isDisabled = !p.available;
+    const adminButtons = isAdmin ? `
+      <button onclick="deleteProduct(${i})" style="background:#dc3545;margin-top:5px;">Eliminar</button>
+      <button onclick="toggleAvailability(${i})" style="background:#ffc107;margin-top:5px;">
+        ${p.available ? "Marcar como agotado" : "Volver disponible"}
+      </button>
+    ` : "";
 
     list.innerHTML += `
       <div class="product">
         <img src="${p.image}" onclick="${isDisabled ? 'toast(`Producto agotado`)' : `openSizes(${i})`}">
         <h3>${p.name} ${!p.available ? '<span style="color:red;">(Agotado)</span>' : ''}</h3>
         <p>C$${p.price.toFixed(2)}</p>
-
         <button ${isDisabled ? "disabled" : ""} onclick="openSizes(${i})">
           ${isDisabled ? "Agotado" : "Ver tallas"}
         </button>
-
-        ${isAdmin ? `
-          <button onclick="deleteProduct(${i})" style="background:#dc3545;margin-top:5px;">Eliminar</button>
-          <button onclick="toggleAvailability(${i})" style="background:#ffc107;margin-top:5px;">
-            ${p.available ? "Marcar como agotado" : "Volver disponible"}
-          </button>
-        ` : ""}
+        ${adminButtons}
       </div>
     `;
   });
 }
 
-// ================= ADMINISTRACIÓN =================
-document.getElementById("admin-btn").onclick = () => {
-  const password = prompt("Contraseña admin:");
-  if(password === adminPassword) {
-    isAdmin = !isAdmin;
-    document.getElementById("admin-section").classList.toggle("hidden");
+// ================= ELIMINAR / DISPONIBILIDAD =================
+function deleteProduct(index){
+  if(!isAdmin) return toast("No autorizado");
+  if(confirm(`¿Eliminar "${products[index].name}"?`)){
+    products.splice(index,1);
+    saveProducts();
     renderProducts();
-    toast(isAdmin ? "Modo admin activado" : "Modo admin desactivado");
-  } else toast("Contraseña incorrecta");
-};
+    toast("Producto eliminado");
+  }
+}
 
-// ================= MODAL DE TALLAS =================
-function openSizes(index) {
+function toggleAvailability(index){
+  if(!isAdmin) return toast("No autorizado");
+  products[index].available = !products[index].available;
+  saveProducts();
+  renderProducts();
+  toast(products[index].available ? "Producto disponible" : "Producto agotado");
+}
+
+// ================= MODAL TALLAS =================
+function openSizes(index){
   selectedProduct = products[index];
   if(!selectedProduct.available) return toast("Producto agotado");
 
@@ -119,7 +136,6 @@ function openSizes(index) {
 
   const sizeBox = document.getElementById("size-options");
   sizeBox.innerHTML = "";
-
   selectedProduct.sizes.forEach(size => {
     const btn = document.createElement("button");
     btn.textContent = size;
@@ -130,42 +146,39 @@ function openSizes(index) {
   document.getElementById("size-modal").classList.remove("hidden");
 }
 
-function selectSize(size, btn) {
+function selectSize(size, btn){
   selectedSize = size;
   document.querySelectorAll("#size-options button").forEach(b => b.classList.remove("selected"));
   btn.classList.add("selected");
   document.getElementById("buy-btn").disabled = false;
 }
 
-// ================= CARRITO =================
+// ================= AGREGAR AL CARRITO =================
 document.getElementById("buy-btn").onclick = () => {
   if(!selectedSize) return;
-
   cart.push({
     name: selectedProduct.name,
     price: selectedProduct.price,
     size: selectedSize,
     image: selectedProduct.image
   });
-
   saveCart();
   updateCartCount();
   toast("Agregado al carrito");
   document.getElementById("size-modal").classList.add("hidden");
-};
+}
 
-function updateCartCount() {
+// ================= CARRITO =================
+function updateCartCount(){
   document.getElementById("cart-count").textContent = cart.length;
 }
 
-function openCart() {
+function openCart(){
   const items = document.getElementById("cart-items");
   items.innerHTML = "";
-
   let total = 0;
-  cart.forEach((item, index) => {
+  cart.forEach((item,index)=>{
     total += item.price;
-
     items.innerHTML += `
       <div class="cart-item">
         <span>${item.name} (talla ${item.size}) - C$${item.price.toFixed(2)}</span>
@@ -173,26 +186,24 @@ function openCart() {
       </div>
     `;
   });
-
   document.getElementById("cart-total").textContent = total.toFixed(2);
   document.getElementById("cart-modal").classList.remove("hidden");
 }
 
-function removeFromCart(index) {
-  cart.splice(index, 1);
+function removeFromCart(index){
+  cart.splice(index,1);
   saveCart();
   updateCartCount();
   openCart();
 }
 
-function checkout() {
-  if(cart.length === 0) return;
+function checkout(){
+  if(cart.length===0) return toast("El carrito está vacío");
   let msg = "Hola, quiero comprar:\n\n";
   cart.forEach(item => {
     msg += `- ${item.name} (talla ${item.size}) - C$${item.price}\n`;
   });
-  const url = `https://wa.me/${adminPhone}?text=${encodeURIComponent(msg)}`;
-  window.open(url, "_blank");
+  window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(msg)}`, "_blank");
 }
 
 // ================= MODALES =================
@@ -202,30 +213,18 @@ document.getElementById("close-modal").onclick = () =>
 document.getElementById("close-cart").onclick = () =>
   document.getElementById("cart-modal").classList.add("hidden");
 
+document.addEventListener("keydown", e=>{
+  if(e.key==="Escape"){
+    document.getElementById("size-modal").classList.add("hidden");
+    document.getElementById("cart-modal").classList.add("hidden");
+  }
+});
+
 // ================= TOAST =================
-function toast(msg) {
+function toast(msg){
   const t = document.getElementById("toast");
   t.textContent = msg;
   t.classList.remove("hidden");
   t.classList.add("show");
-  setTimeout(() => { t.classList.remove("show"); t.classList.add("hidden"); }, 2500);
-}
-
-// ================= ADMIN: ELIMINAR / DISPONIBILIDAD =================
-function deleteProduct(index) {
-  if(!isAdmin) return toast("No autorizado");
-  if(confirm(`¿Eliminar "${products[index].name}"?`)) {
-    products.splice(index, 1);
-    saveProducts();
-    renderProducts();
-    toast("Producto eliminado");
-  }
-}
-
-function toggleAvailability(index) {
-  if(!isAdmin) return toast("No autorizado");
-  products[index].available = !products[index].available;
-  saveProducts();
-  renderProducts();
-  toast(products[index].available ? "Producto disponible" : "Producto agotado");
+  setTimeout(()=>{t.classList.remove("show"); t.classList.add("hidden");},2500);
 }
