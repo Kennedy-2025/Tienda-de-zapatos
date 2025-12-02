@@ -1,6 +1,6 @@
-// =============== CONFIGURACIÓN ===============
-const adminPhone = "50583647398";
-const adminPassword = "celenia2019";
+// ================= CONFIGURACIÓN =================
+const adminPhone = "5053993383";
+const adminPassword = "1234";
 
 let selectedProduct = null;
 let selectedSize = null;
@@ -9,7 +9,6 @@ let isAdmin = false;
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
 let products = JSON.parse(localStorage.getItem("products")) || [];
 
-// Guardado en localStorage
 function saveProducts() { localStorage.setItem("products", JSON.stringify(products)); }
 function saveCart() { localStorage.setItem("cart", JSON.stringify(cart)); }
 
@@ -17,7 +16,10 @@ function saveCart() { localStorage.setItem("cart", JSON.stringify(cart)); }
 renderProducts();
 updateCartCount();
 
-// =============== AGREGAR PRODUCTO (FIREBASE STORAGE) ===============
+// ================= FIREBASE STORAGE =================
+const storage = firebase.storage();
+
+// ================= AGREGAR PRODUCTO =================
 document.getElementById("add-form").onsubmit = async e => {
   e.preventDefault();
   if(!isAdmin) return toast("No autorizado");
@@ -35,8 +37,8 @@ document.getElementById("add-form").onsubmit = async e => {
 
   try {
     const storageRef = storage.ref(`productos/${Date.now()}_${imageFile.name}`);
-    await storageRef.put(imageFile); // Subir archivo
-    const imageURL = await storageRef.getDownloadURL(); // Obtener URL pública
+    await storageRef.put(imageFile);
+    const imageURL = await storageRef.getDownloadURL();
 
     products.push({
       name,
@@ -50,13 +52,14 @@ document.getElementById("add-form").onsubmit = async e => {
     renderProducts();
     document.getElementById("add-form").reset();
     toast("Producto agregado con éxito");
-  } catch(err) {
+
+  } catch (err) {
     console.error(err);
     toast("Error subiendo la imagen");
   }
 };
 
-// =============== RENDERIZAR PRODUCTOS ===============
+// ================= RENDER PRODUCTOS =================
 function renderProducts() {
   const list = document.getElementById("product-list");
   list.innerHTML = "";
@@ -85,7 +88,7 @@ function renderProducts() {
   });
 }
 
-// =============== ADMINISTRACIÓN ===============
+// ================= ADMINISTRACIÓN =================
 document.getElementById("admin-btn").onclick = () => {
   const password = prompt("Contraseña admin:");
   if(password === adminPassword) {
@@ -96,25 +99,7 @@ document.getElementById("admin-btn").onclick = () => {
   } else toast("Contraseña incorrecta");
 };
 
-function deleteProduct(index) {
-  if(!isAdmin) return toast("No autorizado");
-  if(confirm(`¿Eliminar "${products[index].name}"?`)) {
-    products.splice(index, 1);
-    saveProducts();
-    renderProducts();
-    toast("Producto eliminado");
-  }
-}
-
-function toggleAvailability(index) {
-  if(!isAdmin) return toast("No autorizado");
-  products[index].available = !products[index].available;
-  saveProducts();
-  renderProducts();
-  toast(products[index].available ? "Producto disponible" : "Producto agotado");
-}
-
-// =============== MODAL DE TALLAS ===============
+// ================= MODAL DE TALLAS =================
 function openSizes(index) {
   selectedProduct = products[index];
   if(!selectedProduct.available) return toast("Producto agotado");
@@ -152,15 +137,17 @@ function selectSize(size, btn) {
   document.getElementById("buy-btn").disabled = false;
 }
 
-// =============== CARRITO ===============
+// ================= CARRITO =================
 document.getElementById("buy-btn").onclick = () => {
   if(!selectedSize) return;
+
   cart.push({
     name: selectedProduct.name,
     price: selectedProduct.price,
     size: selectedSize,
     image: selectedProduct.image
   });
+
   saveCart();
   updateCartCount();
   toast("Agregado al carrito");
@@ -199,7 +186,7 @@ function removeFromCart(index) {
 }
 
 function checkout() {
-  if(cart.length === 0) return toast("Carrito vacío");
+  if(cart.length === 0) return;
   let msg = "Hola, quiero comprar:\n\n";
   cart.forEach(item => {
     msg += `- ${item.name} (talla ${item.size}) - C$${item.price}\n`;
@@ -208,21 +195,14 @@ function checkout() {
   window.open(url, "_blank");
 }
 
-// =============== MODALES ===============
+// ================= MODALES =================
 document.getElementById("close-modal").onclick = () =>
   document.getElementById("size-modal").classList.add("hidden");
 
 document.getElementById("close-cart").onclick = () =>
   document.getElementById("cart-modal").classList.add("hidden");
 
-document.addEventListener("keydown", e => {
-  if(e.key === "Escape") {
-    document.getElementById("size-modal").classList.add("hidden");
-    document.getElementById("cart-modal").classList.add("hidden");
-  }
-});
-
-// =============== TOAST ===============
+// ================= TOAST =================
 function toast(msg) {
   const t = document.getElementById("toast");
   t.textContent = msg;
@@ -231,3 +211,21 @@ function toast(msg) {
   setTimeout(() => { t.classList.remove("show"); t.classList.add("hidden"); }, 2500);
 }
 
+// ================= ADMIN: ELIMINAR / DISPONIBILIDAD =================
+function deleteProduct(index) {
+  if(!isAdmin) return toast("No autorizado");
+  if(confirm(`¿Eliminar "${products[index].name}"?`)) {
+    products.splice(index, 1);
+    saveProducts();
+    renderProducts();
+    toast("Producto eliminado");
+  }
+}
+
+function toggleAvailability(index) {
+  if(!isAdmin) return toast("No autorizado");
+  products[index].available = !products[index].available;
+  saveProducts();
+  renderProducts();
+  toast(products[index].available ? "Producto disponible" : "Producto agotado");
+}
