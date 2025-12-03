@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3000;
 
 // ===== CORS =====
 app.use(cors({
-  origin: "https://tienda-de-zapatos-git-main-kes-projects-fbd3dadd.vercel.app" // tu dominio
+  origin: "https://tu-dominio-vercel.vercel.app" // Cambia por tu dominio
 }));
 
 // ===== Carpeta de uploads =====
