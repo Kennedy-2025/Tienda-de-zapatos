@@ -1,37 +1,42 @@
-import express from "express";
-import multer from "multer";
-import path from "path";
+import express from 'express';
+import cors from 'cors';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+
+// Crear la carpeta uploads si no existe
+const uploadDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
 const app = express();
-const port = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
-// Carpeta donde se guardarán las imágenes
+// Permitir solicitudes desde tu frontend (Vercel)
+app.use(cors({
+  origin: 'https://tienda-de-zapatos-git-main-kes-projects-fbd3dadd.vercel.app'
+}));
+
+// Configuración de multer para subir imágenes
 const storage = multer.diskStorage({
-  destination: "./uploads/",
+  destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
+    const uniqueName = `${Date.now()}_${file.originalname.replace(/\s+/g, '_')}`;
+    cb(null, uniqueName);
   }
 });
 const upload = multer({ storage });
 
-// Permitir CORS para tu frontend
-app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  next();
-});
-
-// Carpeta uploads accesible públicamente
-app.use("/uploads", express.static("uploads"));
-
 // Endpoint para subir imagen
-app.post("/upload", upload.single("image"), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-  const url = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
-  res.json({ url });
+app.post('/', upload.single('image'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No se subió ningún archivo' });
+
+  const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+  res.json({ url: imageUrl });
 });
 
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+// Servir archivos estáticos de uploads
+app.use('/uploads', express.static(uploadDir));
+
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en puerto ${PORT}`);
 });
