@@ -1,49 +1,40 @@
-// server.js
 const express = require("express");
+const cors = require("cors");
 const multer = require("multer");
 const path = require("path");
-const cors = require("cors");
 const fs = require("fs");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ---- CORS ----
+// Carpeta para guardar imágenes
+const UPLOAD_DIR = path.join(__dirname, "uploads");
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR);
+
+// Configurar CORS para permitir tu frontend
 app.use(cors({
-  origin: "https://tienda-de-zapatos-git-main-kes-projects-fbd3dadd.vercel.app",
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type"]
+  origin: "https://tienda-de-zapatos-git-main-kes-projects-fbd3dadd.vercel.app", // cambia a tu dominio
+  methods: ["GET","POST"],
 }));
 
-app.options("*", cors());
-
-// ---- Carpeta de uploads ----
-const UPLOADS_DIR = path.join(__dirname, "uploads");
-if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR);
-
-// ---- Configuración multer ----
+// Multer para subir archivos
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOADS_DIR),
+  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
-    cb(null, `${Date.now()}${ext}`);
+    cb(null, Date.now() + ext);
   }
 });
 const upload = multer({ storage });
 
-// ---- Servir imágenes ----
-app.use("/uploads", express.static(UPLOADS_DIR));
-
-// ---- Endpoint de subida ----
+// Ruta para subir imágenes
 app.post("/upload", upload.single("image"), (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-
   const url = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
   res.json({ url });
 });
 
-// ---- Rutas de prueba ----
-app.get("/", (req, res) => res.send("Servidor activo 🚀"));
+// Servir imágenes
+app.use("/uploads", express.static(UPLOAD_DIR));
 
-// ---- Iniciar servidor ----
-app.listen(PORT, () => console.log(`Servidor corriendo en https://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
