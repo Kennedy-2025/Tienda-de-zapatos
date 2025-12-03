@@ -1,20 +1,10 @@
 {
-  "name": "tienda-de-zapatos",
+  "name": "zapateria-backend",
   "version": "1.0.0",
-  "description": "Proyecto de tienda de zapatos con Firebase Storage",
-  "main": "index.js",
   "type": "module",
-  "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
-  },
-  "author": "Kennedy",
-  "license": "ISC",
+  "main": "server.js",
   "dependencies": {
-    "firebase": "^11.1.0",
-    "express": "^4.18.2"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.1"
+    "express": "^4.18.2",
+    "multer": "^1.4.5"
   }
 }
