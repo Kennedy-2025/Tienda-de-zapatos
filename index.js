@@ -189,3 +189,52 @@ function toast(msg) {
   setTimeout(() => { t.classList.remove("show"); t.classList.add("hidden"); }, 2500);
 }
 
+
+const isAdmin = true; // Ajusta según tu lógica
+let products = JSON.parse(localStorage.getItem("products")) || [];
+const uploadUrl = "https://app-19f28427-fb29-4605-bc97-8e0929434d05.cleverapps.io/upload";
+
+document.getElementById("add-form").onsubmit = async (e) => {
+  e.preventDefault();
+  if (!isAdmin) return alert("Solo admins pueden subir productos");
+
+  const name = document.getElementById("name").value.trim();
+  const price = parseFloat(document.getElementById("price").value);
+  const file = document.getElementById("image").files[0];
+  const sizes = document.getElementById("sizes").value.split(",").map(s => Number(s.trim()));
+
+  if (!name || !file || sizes.length === 0 || isNaN(price)) return alert("Datos inválidos");
+
+  try {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const res = await fetch(uploadUrl, { method: "POST", body: formData });
+    const data = await res.json();
+
+    products.push({ name, price, sizes, image: data.url, available: true });
+    localStorage.setItem("products", JSON.stringify(products));
+    renderProducts();
+    e.target.reset();
+    alert("Producto agregado con éxito");
+  } catch (err) {
+    console.error(err);
+    alert("Error subiendo imagen");
+  }
+};
+
+// Render productos
+function renderProducts() {
+  const list = document.getElementById("product-list");
+  list.innerHTML = "";
+  products.forEach((p, i) => {
+    list.innerHTML += `
+      <div class="product">
+        <img src="${p.image}" style="width:200px;height:200px;">
+        <h3>${p.name}</h3>
+        <p>C$${p.price.toFixed(2)}</p>
+      </div>
+    `;
+  });
+}
+renderProducts();
