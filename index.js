@@ -6,7 +6,6 @@ let selectedProduct = null;
 let selectedSize = null;
 let isAdmin = false;
 
-// Cargar datos guardados
 let products = JSON.parse(localStorage.getItem("products")) || [
   { name: "Zapato Deportivo", price: 49.99, image: "https://images.unsplash.com/photo-1596464716121-2a0c1aa02e04?auto=format&fit=crop&w=400&q=80", sizes: [38,39,40,41,42], available: true },
   { name: "Zapato Elegante", price: 89.99, image: "https://images.unsplash.com/photo-1606811847181-cbde7b78c74c?auto=format&fit=crop&w=400&q=80", sizes: [39,40,41,42,44], available: true }
@@ -14,53 +13,23 @@ let products = JSON.parse(localStorage.getItem("products")) || [
 
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
-// ====== GUARDAR DATOS ======
 function saveProducts() { localStorage.setItem("products", JSON.stringify(products)); }
 function saveCart() { localStorage.setItem("cart", JSON.stringify(cart)); }
 
-// ======================================================================================
-//                                 FIREBASE v11 CONFIG
-// ======================================================================================
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-storage.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyBjbzxSrLjp3qgl8qaYDfQQgVX5E7DqxUs",
-  authDomain: "zapateria-3d5da.firebaseapp.com",
-  databaseURL: "https://zapateria-3d5da-default-rtdb.firebaseio.com",
-  projectId: "zapateria-3d5da",
-  storageBucket: "zapateria-3d5da.firebasestorage.app",
-  messagingSenderId: "885381797478",
-  appId: "1:885381797478:web:860afaaf0584275bd43fa7",
-  measurementId: "G-4MP0B60M4W"
-};
-
-const app = initializeApp(firebaseConfig);
-const storage = getStorage(app);
-
-// ======================================================================================
-//                               RENDER DE PRODUCTOS
-// ======================================================================================
-
+// ====== RENDER DE PRODUCTOS ======
 function renderProducts() {
   const list = document.getElementById("product-list");
   list.innerHTML = "";
-
   products.forEach((p, i) => {
     const isDisabled = !p.available;
-
     list.innerHTML += `
       <div class="product">
         <img src="${p.image}" onclick="${isDisabled ? 'toast(`Producto agotado`)' : `openSizes(${i})`}">
-        
         <h3>${p.name} ${!p.available ? '<span style="color:red">(Agotado)</span>' : ''}</h3>
         <p>C$${p.price.toFixed(2)}</p>
-        
         <button ${isDisabled ? "disabled" : ""} onclick="openSizes(${i})">
           ${isDisabled ? "Agotado" : "Ver tallas"}
         </button>
-
         ${isAdmin ? `
           <button onclick="deleteProduct(${i})" style="background:#dc3545;margin-top:5px">Eliminar</button>
           <button onclick="toggleAvailability(${i})" style="background:#ffc107;margin-top:5px">
@@ -71,29 +40,20 @@ function renderProducts() {
     `;
   });
 }
-
 renderProducts();
 updateCartCount();
 
-// ======================================================================================
-//                                  ADMIN
-// ======================================================================================
-
+// ====== ADMIN ======
 document.getElementById("admin-btn").onclick = () => {
   const password = prompt("Contraseña de administrador:");
   if (password !== adminPassword) return toast("Contraseña incorrecta");
-
   isAdmin = !isAdmin;
   toast(isAdmin ? "Modo administrador activado" : "Modo administrador desactivado");
-
   document.getElementById("admin-section").classList.toggle("hidden");
   renderProducts();
 };
 
-// ======================================================================================
-//                           AGREGAR PRODUCTO CON IMAGEN
-// ======================================================================================
-
+// ====== AGREGAR PRODUCTO CON IMAGEN ======
 document.getElementById("add-form").onsubmit = async (e) => {
   e.preventDefault();
   if (!isAdmin) return toast("Acción no permitida");
@@ -101,53 +61,40 @@ document.getElementById("add-form").onsubmit = async (e) => {
   const name = document.getElementById("name").value.trim();
   const price = parseFloat(document.getElementById("price").value);
   const file = document.getElementById("image").files[0];
-  const sizes = document.getElementById("sizes").value.split(",")
-    .map(s => Number(s.trim()))
-    .filter(n => !isNaN(n));
+  const sizes = document.getElementById("sizes").value.split(",").map(s => Number(s.trim()));
 
-  if (!name || !file || sizes.length === 0 || isNaN(price))
-    return toast("Datos inválidos");
+  if (!name || !file || sizes.length === 0 || isNaN(price)) return toast("Datos inválidos");
 
   toast("Subiendo imagen...");
+  const formData = new FormData();
+  formData.append("image", file);
 
   try {
-    const storageRef = ref(storage, `productos/${Date.now()}_${file.name}`);
-    await uploadBytes(storageRef, file);
-    const imageURL = await getDownloadURL(storageRef);
-
-    products.push({
-      name,
-      price,
-      image: imageURL,
-      sizes,
-      available: true
+    const res = await fetch("http://app-19f28427-fb29-4605-bc97-8e0929434d05.cleverapps.io/", { // <-- Cambia esto
+      method: "POST",
+      body: formData
     });
-
+    const data = await res.json();
+    products.push({ name, price, image: data.url, sizes, available: true });
     saveProducts();
     renderProducts();
     e.target.reset();
     toast("Producto agregado con éxito");
-
   } catch (err) {
     console.error(err);
     toast("Error subiendo imagen");
   }
 };
 
-// ======================================================================================
-//                                 ELIMINAR Y DESACTIVAR
-// ======================================================================================
-
+// ====== ELIMINAR Y DESACTIVAR ======
 window.deleteProduct = (i) => {
   if (!isAdmin) return toast("Acción no permitida");
   if (!confirm("¿Eliminar producto?")) return;
-
   products.splice(i, 1);
   saveProducts();
   renderProducts();
   toast("Producto eliminado");
 };
-
 window.toggleAvailability = (i) => {
   products[i].available = !products[i].available;
   saveProducts();
@@ -155,20 +102,14 @@ window.toggleAvailability = (i) => {
   toast(products[i].available ? "Disponible" : "Agotado");
 };
 
-// ======================================================================================
-//                                   MODAL TALLAS
-// ======================================================================================
-
+// ====== MODAL TALLAS ======
 window.openSizes = (index) => {
   selectedProduct = products[index];
   selectedSize = null;
-
   document.getElementById("modal-product-name").textContent = selectedProduct.name;
-
   const modalContent = document.querySelector("#size-modal .modal-content");
   const oldImg = modalContent.querySelector("img.large");
   if (oldImg) oldImg.remove();
-
   const img = document.createElement("img");
   img.src = selectedProduct.image;
   img.classList.add("large");
@@ -182,11 +123,9 @@ window.openSizes = (index) => {
     btn.onclick = () => selectSize(size, btn);
     box.appendChild(btn);
   });
-
   document.getElementById("buy-btn").disabled = true;
   document.getElementById("size-modal").classList.remove("hidden");
 };
-
 function selectSize(size, btn) {
   selectedSize = size;
   document.querySelectorAll("#size-options button").forEach(b => b.classList.remove("selected"));
@@ -195,38 +134,24 @@ function selectSize(size, btn) {
   toast(`Talla ${size} seleccionada`);
 }
 
-// ======================================================================================
-//                                     CARRITO
-// ======================================================================================
-
+// ====== CARRITO ======
 document.getElementById("buy-btn").onclick = () => {
   if (!selectedSize) return;
-
-  cart.push({
-    name: selectedProduct.name,
-    price: selectedProduct.price,
-    size: selectedSize,
-    image: selectedProduct.image
-  });
-
+  cart.push({ name: selectedProduct.name, price: selectedProduct.price, size: selectedSize, image: selectedProduct.image });
   saveCart();
   updateCartCount();
   toast("Agregado al carrito");
   document.getElementById("size-modal").classList.add("hidden");
 };
-
 function updateCartCount() {
   document.getElementById("cart-count").textContent = cart.length;
 }
-
 window.openCart = () => {
   const items = document.getElementById("cart-items");
   items.innerHTML = "";
   let total = 0;
-
   cart.forEach((item, index) => {
     total += item.price;
-
     items.innerHTML += `
       <div class="cart-item">
         <span>${item.name} (talla ${item.size}) - C$${item.price.toFixed(2)}</span>
@@ -234,58 +159,31 @@ window.openCart = () => {
       </div>
     `;
   });
-
   document.getElementById("cart-total").textContent = total.toFixed(2);
   document.getElementById("cart-modal").classList.remove("hidden");
 };
+window.removeFromCart = (i) => { cart.splice(i, 1); saveCart(); openCart(); updateCartCount(); };
 
-window.removeFromCart = (i) => {
-  cart.splice(i, 1);
-  saveCart();
-  openCart();
-  updateCartCount();
-};
-
-// ======================================================================================
-//                            WHATSAPP (Incluye imagen)
-// ======================================================================================
-
+// ====== WHATSAPP ======
 window.checkout = () => {
   if (cart.length === 0) return toast("El carrito está vacío");
-
   let msg = "Hola, quiero comprar:\n\n";
-
   cart.forEach(item => {
     msg += `- ${item.name} (talla ${item.size}) - C$${item.price.toFixed(2)}\nImagen: ${item.image}\n\n`;
   });
-
   const url = `https://wa.me/${adminPhone}?text=${encodeURIComponent(msg)}`;
   window.open(url, "_blank");
 };
 
-// ======================================================================================
-//                               CIERRE MODALES
-// ======================================================================================
+// ====== CIERRE MODALES ======
+document.getElementById("close-modal").onclick = () => document.getElementById("size-modal").classList.add("hidden");
+document.getElementById("close-cart").onclick = () => document.getElementById("cart-modal").classList.add("hidden");
 
-document.getElementById("close-modal").onclick = () =>
-  document.getElementById("size-modal").classList.add("hidden");
-
-document.getElementById("close-cart").onclick = () =>
-  document.getElementById("cart-modal").classList.add("hidden");
-
-// ======================================================================================
-//                                      TOAST
-// ======================================================================================
-
+// ====== TOAST ======
 function toast(msg) {
   const t = document.getElementById("toast");
   t.textContent = msg;
   t.classList.remove("hidden");
   t.classList.add("show");
-
-  setTimeout(() => {
-    t.classList.remove("show");
-    t.classList.add("hidden");
-  }, 2500);
+  setTimeout(() => { t.classList.remove("show"); t.classList.add("hidden"); }, 2500);
 }
-
