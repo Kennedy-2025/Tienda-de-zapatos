@@ -70,10 +70,11 @@ document.getElementById("add-form").onsubmit = async (e) => {
   formData.append("image", file);
 
   try {
-    const res = await fetch("http://app-19f28427-fb29-4605-bc97-8e0929434d05.cleverapps.io/", { // <-- Cambia esto
-      method: "POST",
-      body: formData
-    });
+  const res = await fetch("https://app-19f28427-fb29-4605-bc97-8e0929434d05.cleverapps.io/", {
+  method: "POST",
+  body: formData
+});
+
     const data = await res.json();
     products.push({ name, price, image: data.url, sizes, available: true });
     saveProducts();
@@ -187,3 +188,4 @@ function toast(msg) {
   t.classList.add("show");
   setTimeout(() => { t.classList.remove("show"); t.classList.add("hidden"); }, 2500);
 }
+
